@@ -121,3 +121,67 @@ SELECT
 FROM employees
 ;
 --16
+UPDATE 
+	projects
+SET
+	end_date = start_date + INTERVAL '5 months'
+WHERE
+	end_date is NULL
+--RETURNING *;
+
+--17
+UPDATE 
+	employees
+SET 
+	salary = salary + 1500,
+	job_title = 'Senior ' || job_title
+WHERE 
+	hire_date BETWEEN 
+	'1998-01-01' 
+	AND
+	'2000-01-05'
+;
+--18
+DELETE FROM addresses
+WHERE city_id IN (5, 17, 20, 30)
+RETURNING *;
+--19
+CREATE VIEW view_company_chart AS
+SELECT 
+	full_name,
+	job_title
+FROM company_chart
+WHERE 
+	manager_id = 184;
+--20
+CREATE VIEW 
+	view_addresses AS
+SELECT
+	CONCAT(e.first_name, ' ', e.last_name) AS full_name,
+	department_id,
+	CONCAT(a.number, ' ', a.street) AS address
+FROM employees AS e, addresses as a
+WHERE 
+	a.id = e.address_id
+ORDER BY address;
+--21
+ALTER VIEW view_addresses RENAME TO view_employee_addresses_info;
+--22
+UPDATE projects
+SET 
+	name = UPPER("name")
+;
+--22
+CREATE VIEW view_initials AS
+SELECT
+	SUBSTRING(first_name, 1, 2) AS initial,
+	last_name
+FROM employees
+ORDER BY last_name;
+--23
+SELECT 
+	name,
+	start_date
+FROM projects
+WHERE 
+	name LIKE 'MOUNT%';
