@@ -47,4 +47,4 @@ SELECT
 FROM 
 	books
 WHERE title LIKE 'Harry Potter%'
-Order BY id;
+ORDER BY id;
