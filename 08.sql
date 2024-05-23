@@ -108,4 +108,118 @@ FROM
 	peaks AS p
 WHERE
 	m."id" = p.mountain_id;
+--12
+SELECT
+	population,
+	LENGTH(
+	CAST(
+	population AS VARCHAR
+	)) AS length
+FROM 
+	countries;
+--13
+SELECT
+	peak_name,
+	LEFT(peak_name, 4) AS positive_left,
+	LEFT(peak_name, -4)AS negative_left
+FROM 
+	peaks;
+--14
+SELECT
+	peak_name,
+	RIGHT(peak_name, 4) AS positive_right,
+	RIGHT(peak_name, -4)AS negative_right
+FROM 
+	peaks;
+--15
+UPDATE 
+	countries
+SET 
+	iso_code = UPPER(LEFT(country_name, 3))
+WHERE	
+	iso_code is NULL
+;
+--16
+UPDATE 
+	countries
+SET 
+	country_code = LOWER(REVERSE(LEFT(country_code, 2)))
+;
+--17
+SELECT
+	CONCAT(elevation, ' ',REPEAT('-', 3), REPEAT('>', 2), ' ', peak_name) AS "Elevation -->> Peak Name"
+FROM
+	peaks
+WHERE 
+	elevation >= 4884
+;
+--18
+CREATE TABLE 
+	bookings_calculation
+AS
+
+SELECT
+	booked_for,
+	CAST(booked_for * 50 AS NUMERIC) AS multiplication,
+	CAST(booked_for % 50 AS NUMERIC) AS modulo
+FROM 
+	bookings
+WHERE
+	apartment_id = 93;
+
+--19
+SELECT
+	latitude,
+	ROUND(latitude, 2) AS round,
+	TRUNC(latitude, 2) AS trunc
+FROM apartments;
+
+-20
+SELECT
+	longitude,
+	ABS(longitude) AS "abs"
+FROM apartments;
+
+--21
+ALTER TABLE 
+	bookings 
+ADD COLUMN 
+	billing_day TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+
+SELECT 
+	TO_CHAR(
+	billing_day, 'DD "Day" MM "Month" YYYY "Year" HH24:MI:SS'
+	) AS billing_day
+FROM 
+	bookings;
+--22
+SELECT
+	EXTRACT(YEAR FROM booked_at) AS YEAR,
+	EXTRACT(MONTH FROM booked_at) AS MONTH,
+	EXTRACT(DAY FROM booked_at) AS DAY,
+	EXTRACT(HOUR FROM booked_at) AS HOUR,
+	EXTRACT(MINUTE FROM booked_at) AS MINUTE,
+	CEILING(EXTRACT(SECOND FROM booked_at)) AS SECOND
+FROM 
+	bookings;
+-- 23
+SELECT
+	user_id,
+	AGE(starts_at, booked_at) AS "early birds"
+FROM 
+	bookings
+WHERE
+	starts_at - booked_at >= '10 months'
+;
+--24
+SELECT
+	companion_full_name,
+	email
+FROM users
+WHERE
+	companion_full_name ILIKE '%aNd%'
+	AND
+	email NOT LIKE '%@gmail'
+	;
+--25
 
