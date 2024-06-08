@@ -112,17 +112,97 @@ GROUP BY country
 ORDER BY booking_count DESC
 ;
 --11
-
+SELECT 
+	m_c.country_code,
+	m.mountain_range,
+	p.peak_name,
+	p.elevation
+FROM mountains AS m
+INNER JOIN peaks AS p
+	ON m.id = p.mountain_id
+INNER JOIN mountains_countries AS m_c
+	ON m.id = m_c.mountain_id
+WHERE m_c.country_code = 'BG'
+	AND
+	p.elevation > 2835
+ORDER BY p.elevation DESC
+	;
 --12
-
+SELECT 
+	m_c.country_code,
+	COUNT(m.mountain_range)
+FROM mountains_countries AS m_c
+JOIN mountains AS m
+ON m.id = m_c.mountain_id
+WHERE m_c.country_code IN ('RU', 'BG', 'US')
+GROUP BY m_c.country_code
+ORDER BY m_c.country_code
+    ;
 --13
+SELECT
+	c.country_name,
+	r.river_name
+FROM countries AS c
+LEFT JOIN countries_rivers AS c_r
+USING (country_code)
+LEFT JOIN rivers AS r
+ON r.id = c_r.river_id
+WHERE c.continent_code = 'AF'
+ORDER BY c.country_name
+LIMIT 5
+	;
 --14
+SELECT
+	MIN(average_area) AS min_average_area
+FROM ( 
+	SELECT
+		AVG (c.area_in_sq_km) AS average_area
+	FROM countries AS c
+	GROUP BY c.continent_code)
+	;
 --15
+SELECT
+	COUNT(*) AS countries_without_mountains
+FROM countries AS c
+LEFT JOIN mountains_countries AS m_r
+USING (country_code)
+WHERE m_r.mountain_id IS NULL
+;
 --16
---17
---18
---19
---20
---
---
---
+CREATE TABLE IF NOT EXISTS monasteries (
+	id SERIAL PRIMARY KEY,
+	monastery_name VARCHAR(255),
+	country_code CHAR(2)
+);
+
+INSERT INTO monasteries (monastery_name, country_code)
+VALUES
+  ('Rila Monastery "St. Ivan of Rila"', 'BG'),
+  ('Bachkovo Monastery "Virgin Mary"', 'BG'),
+  ('Troyan Monastery "Holy Mother''s Assumption"', 'BG'),
+  ('Kopan Monastery', 'NP'),
+  ('Thrangu Tashi Yangtse Monastery', 'NP'),
+  ('Shechen Tennyi Dargyeling Monastery', 'NP'),
+  ('Benchen Monastery', 'NP'),
+  ('Southern Shaolin Monastery', 'CN'),
+  ('Dabei Monastery', 'CN'),
+  ('Wa Sau Toi', 'CN'),
+  ('Lhunshigyia Monastery', 'CN'),
+  ('Rakya Monastery', 'CN'),
+  ('Monasteries of Meteora', 'GR'),
+  ('The Holy Monastery of Stavronikita', 'GR'),
+  ('Taung Kalat Monastery', 'MM'),
+  ('Pa-Auk Forest Monastery', 'MM'),
+  ('Taktsang Palphug Monastery', 'BT'),
+  ('Sümela Monastery', 'TR');
+
+  ALTER TABLE monasteries
+  ADD COLUMN three_rivers BOOLEAN DEFAULT FALSE;
+
+UPDATE countries
+SET three_rivers = (
+	SELECT 
+	COUNT (*) >= 3
+	FROM countries_rivers AS c_r
+WHERE
+	cr.country_code = countries.country_code
