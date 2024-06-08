@@ -159,6 +159,7 @@ FROM (
 		AVG (c.area_in_sq_km) AS average_area
 	FROM countries AS c
 	GROUP BY c.continent_code)
+	AS min_average_area
 	;
 --15
 SELECT
@@ -175,7 +176,8 @@ CREATE TABLE IF NOT EXISTS monasteries (
 	country_code CHAR(2)
 );
 
-INSERT INTO monasteries (monastery_name, country_code)
+INSERT INTO 
+	monasteries (monastery_name, country_code)
 VALUES
   ('Rila Monastery "St. Ivan of Rila"', 'BG'),
   ('Bachkovo Monastery "Virgin Mary"', 'BG'),
@@ -196,13 +198,32 @@ VALUES
   ('Taktsang Palphug Monastery', 'BT'),
   ('Sümela Monastery', 'TR');
 
-  ALTER TABLE monasteries
-  ADD COLUMN three_rivers BOOLEAN DEFAULT FALSE;
+ALTER TABLE 
+	countries
+ADD COLUMN 
+	three_rivers BOOLEAN DEFAULT FALSE;
 
-UPDATE countries
+UPDATE
+	countries
 SET three_rivers = (
-	SELECT 
-	COUNT (*) >= 3
-	FROM countries_rivers AS c_r
-WHERE
-	cr.country_code = countries.country_code
+	SELECT
+		COUNT(*) >= 3
+	FROM 
+		countries_rivers AS cr
+	WHERE 
+		cr.country_code = countries.country_code
+);
+
+SELECT 
+	m.monastery_name,
+	c.country_name
+FROM
+	monasteries AS m
+JOIN 
+	countries AS c
+USING
+	(country_code)
+WHERE 
+	NOT three_rivers
+ORDER BY
+	monastery_name;
