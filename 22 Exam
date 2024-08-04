@@ -1,0 +1,188 @@
+--1
+CREATE TABLE IF NOT EXISTS accounts(
+	id SERIAL PRIMARY KEY,
+	username VARCHAR(30) UNIQUE NOT NULL,
+	password VARCHAR(30) NOT NULL,
+	email VARCHAR(50) NOT NULL,
+	gender CHAR(1) CHECK (gender IN ('M', 'F')) NOT NULL,
+	age INT NOT NULL,
+	job_title VARCHAR(40) NOT NULL,
+	ip VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS addresses(
+	id SERIAL PRIMARY KEY,
+	street VARCHAR(30) NOT NULL,
+	town VARCHAR(30) NOT NULL,
+	country VARCHAR(30) NOT NULL,
+	account_id INT REFERENCES accounts ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS photos(
+	id SERIAL PRIMARY KEY,
+	description TEXT,
+	capture_date TIMESTAMP NOT NULL,
+	views INT CHECK (views >= 0) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS comments(
+	id SERIAL PRIMARY KEY,
+	content VARCHAR(255) NOT NULL,
+	published_on TIMESTAMP NOT NULL,
+	photo_id INT REFERENCES photos ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS accounts_photos(
+	account_id INT REFERENCES accounts ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+	photo_id INT REFERENCES photos ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+	PRIMARY KEY(account_id, photo_id)
+);
+
+CREATE TABLE IF NOT EXISTS likes(
+	id SERIAL PRIMARY KEY,
+	photo_id INT REFERENCES photos ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+	account_id INT REFERENCES accounts ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+--2
+INSERT INTO
+	addresses (street, town, country, account_id)
+SELECT 
+	a.username,
+	a.password,
+	a.ip,
+	a.age	
+FROM accounts AS a
+WHERE gender = 'F'
+;
+
+--3
+UPDATE addresses
+SET country =   
+	CASE
+ 		WHEN country LIKE 'B%' THEN 'Blocked'
+ 		WHEN country LIKE 'T%' THEN 'Test'
+ 		WHEN country LIKE 'P%' THEN 'In Progress'
+		ELSE country
+	END
+;
+--4
+DELETE FROM addresses
+WHERE
+	id % 2 = 0
+	AND
+	street ILIKE '%r%'
+;
+--5
+SELECT
+	username,
+	gender,
+	age
+FROM accounts
+WHERE 
+	age >= 18
+	AND
+	LENGTH(username) > 9
+ORDER BY 
+	age DESC, 
+	username 
+;
+
+--6
+SELECT
+	p.id AS photo_id,
+	p.capture_date,
+	p.description,
+	COUNT(c.id) AS comments_count
+FROM photos AS P
+JOIN comments AS c
+ON p.id = c.photo_id
+GROUP BY p.id, p.capture_date, p.description, c.photo_id
+HAVING 
+	p.description IS NOT NULL
+ORDER BY comments_count DESC, c.photo_id
+LIMIT 3
+	;
+--7
+SELECT
+	CONCAT(a.id, ' ', a.username),
+	a.email
+FROM accounts AS a	
+JOIN accounts_photos AS a_p
+ON a.id = a_p.account_id
+	
+JOIN photos AS p
+ON p.id = a_p.photo_id
+	
+WHERE a.id = p.id
+
+ORDER BY a.id
+;
+--8
+SELECT
+	p.id AS photo_id,
+	COUNT(l.id) AS likes_count,
+	COUNT(c.content) AS comments_count
+FROM photos AS p
+
+LEFT JOIN comments AS c
+ON p.id = c.photo_id
+
+LEFT JOIN likes AS l
+ON p.id = l.photo_id
+
+GROUP BY photo_id
+ORDER BY likes_count DESC, comments_count DESC, photo_id
+;
+
+--9
+SELECT
+	CONCAT(LEFT(description, 10), '...') AS summary,
+	TO_CHAR(capture_date, 'DD.MM HH24:MI') AS "date"
+FROM photos
+WHERE EXTRACT(day FROM capture_date) = 10
+ORDER BY capture_date DESC
+	;
+--10
+CREATE OR REPLACE FUNCTION udf_accounts_photos_count(account_username VARCHAR(30))
+RETURNS INT
+AS 
+$$
+	DECLARE output INT;
+	BEGIN
+		SELECT
+			COUNT(photo_id) INTO output
+			FROM accounts AS a
+	
+			LEFT JOIN accounts_photos AS a_p
+			ON a_p.account_id = a.id
+	
+			GROUP BY a.username
+			HAVING a.username = account_username
+		;
+		RETURN output;
+	END;
+$$
+LANGUAGE plpgsql;
+--11
+CREATE OR REPLACE PROCEDURE udp_modify_account(
+address_street VARCHAR(30), 
+address_town VARCHAR(30)
+	)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE accounts
+	
+	SET job_title = CONCAT('(Remote) ', job_title)
+	
+	WHERE id = (
+		SELECT account_id
+		FROM addresses
+		WHERE 
+			street = address_street
+				AND
+			town = address_town);
+END;
+$$;
+
